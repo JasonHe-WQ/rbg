@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"sync"
 	"sync/atomic"
 
@@ -74,7 +75,7 @@ func (rc *realControl) Scale(
 			controllerKey, expectedCreations, expectedCurrentCreations)
 
 		// available instanceutil-id come from free pvc
-		availableIDs := getOrGenAvailableIDs(expectedCreations, instances)
+		availableIDs := getOrGenAvailableIDs(updateSet, expectedCreations, instances)
 		return rc.createInstances(expectedCreations, expectedCurrentCreations,
 			currentSet, updateSet, currentRevision, updateRevision, availableIDs.UnsortedList())
 	}
@@ -291,17 +292,32 @@ func getPlannedDeletedInstances(gs *appsv1alpha1.InstanceSet, instances []*appsv
 // If there is not enough existing available IDs, then generate ID using rand utility.
 // More details: if template changes more than container image, controller will delete instances during update, and
 // it will keep the pvc to reuse.
-func getOrGenAvailableIDs(num int, instances []*appsv1alpha1.Instance) sets.Set[string] {
+func getOrGenAvailableIDs(set *appsv1alpha1.InstanceSet, num int, instances []*appsv1alpha1.Instance) sets.Set[string] {
 	existingIDs := sets.New[string]()
-	availableIDs := sets.New[string]()
-
 	for _, instance := range instances {
 		if id := instance.Labels[appsv1alpha1.SetInstanceIDLabelKey]; len(id) > 0 {
 			existingIDs.Insert(id)
-			availableIDs.Delete(id)
 		}
 	}
 
+	if getInstancePattern(set) == appsv1alpha1.StatefulSetInstancePattern {
+		desiredReplicas := 0
+		if set != nil && set.Spec.Replicas != nil {
+			desiredReplicas = int(*set.Spec.Replicas)
+		}
+
+		retIDs := sets.New[string]()
+		for i := 0; i < desiredReplicas && retIDs.Len() < num; i++ {
+			id := strconv.Itoa(i)
+			if existingIDs.Has(id) {
+				continue
+			}
+			retIDs.Insert(id)
+		}
+		return retIDs
+	}
+
+	availableIDs := sets.New[string]()
 	retIDs := sets.New[string]()
 	for i := 0; i < num; i++ {
 		id := getOrGenInstanceID(existingIDs, availableIDs)
@@ -324,6 +340,13 @@ func getOrGenInstanceID(existingIDs, availableIDs sets.Set[string]) string {
 	return id
 }
 
+func getInstancePattern(set *appsv1alpha1.InstanceSet) appsv1alpha1.InstancePatternType {
+	if set == nil {
+		return ""
+	}
+	return appsv1alpha1.InstancePatternType(set.Labels[appsv1alpha1.RBGInstancePatternLabelKey])
+}
+
 func (rc *realControl) chooseInstancesToDelete(set *appsv1alpha1.InstanceSet, totalDiff int, currentRevDiff int, notUpdatedInstances, updatedInstances []*appsv1alpha1.Instance) []*appsv1alpha1.Instance {
 	coreControl := core.New(set)
 	choose := func(instances []*appsv1alpha1.Instance, diff int) []*appsv1alpha1.Instance {
@@ -341,6 +364,17 @@ func (rc *realControl) chooseInstancesToDelete(set *appsv1alpha1.InstanceSet, to
 		}
 		return instances[:diff]
 	}
+	if getInstancePattern(set) == appsv1alpha1.StatefulSetInstancePattern {
+		choose = func(instances []*appsv1alpha1.Instance, diff int) []*appsv1alpha1.Instance {
+			if diff >= len(instances) {
+				return instances
+			}
+			sort.Slice(instances, func(i, j int) bool {
+				return instanceOrdinalForSort(instances[i]) > instanceOrdinalForSort(instances[j])
+			})
+			return instances[:diff]
+		}
+	}
 
 	var instancesToDelete []*appsv1alpha1.Instance
 	if currentRevDiff >= totalDiff {
@@ -353,4 +387,15 @@ func (rc *realControl) chooseInstancesToDelete(set *appsv1alpha1.InstanceSet, to
 	}
 
 	return instancesToDelete
+}
+
+func instanceOrdinalForSort(instance *appsv1alpha1.Instance) int {
+	if instance == nil {
+		return -1
+	}
+	id := instance.Labels[appsv1alpha1.SetInstanceIDLabelKey]
+	if ordinal, err := strconv.Atoi(id); err == nil {
+		return ordinal
+	}
+	return int(^uint(0) >> 1)
 }

@@ -53,9 +53,13 @@ func (r *InstanceSetReconciler) Validate(
 		return fmt.Errorf("currently role.labels[instance.rolebasedgroup.workloads.x-k8s.io/pattern] is required")
 	}
 
-	if role.Labels[workloadsv1alpha1.RBGInstancePatternLabelKey] !=
-		string(workloadsv1alpha1.DeploymentInstancePattern) {
-		return fmt.Errorf("currently only 'Deployment' pattern is supported")
+	instancePattern := role.Labels[workloadsv1alpha1.RBGInstancePatternLabelKey]
+	if instancePattern != string(workloadsv1alpha1.DeploymentInstancePattern) &&
+		instancePattern != string(workloadsv1alpha1.StatefulSetInstancePattern) {
+		return fmt.Errorf("unsupported instance pattern %q, supported patterns are %q and %q",
+			instancePattern,
+			workloadsv1alpha1.DeploymentInstancePattern,
+			workloadsv1alpha1.StatefulSetInstancePattern)
 	}
 
 	return nil
