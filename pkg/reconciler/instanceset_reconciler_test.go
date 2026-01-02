@@ -112,7 +112,7 @@ func TestInstanceSetReconciler_Validate(t *testing.T) {
 			expectError: true,
 		},
 		{
-			name: "valid template with invalid pattern",
+			name: "valid template with StatefulSet pattern",
 			role: &workloadsv1alpha1.RoleSpec{
 				Labels: map[string]string{
 					workloadsv1alpha1.RBGInstancePatternLabelKey: string(workloadsv1alpha1.StatefulSetInstancePattern),
@@ -120,6 +120,16 @@ func TestInstanceSetReconciler_Validate(t *testing.T) {
 				TemplateSource: workloadsv1alpha1.TemplateSource{
 					Template: &corev1.PodTemplateSpec{},
 				},
+			},
+			expectError: false,
+		},
+		{
+			name: "invalid template with unsupported pattern",
+			role: &workloadsv1alpha1.RoleSpec{
+				Labels: map[string]string{
+					workloadsv1alpha1.RBGInstancePatternLabelKey: "Foo",
+				},
+				Template: &corev1.PodTemplateSpec{},
 			},
 			expectError: true,
 		},
