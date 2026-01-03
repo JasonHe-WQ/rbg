@@ -94,6 +94,9 @@ const RoleLabelPrefix = "role." + RBGPrefix
 const (
 	// RBGRoleTemplateTypeLabelKey identifies the role organization pattern
 	RBGRoleTemplateTypeLabelKey = RoleLabelPrefix + "template-type"
+
+	// RBGRoleReplicaIndexLabelKey identifies the ordinal index of a role replica (StatefulSet pattern only).
+	RBGRoleReplicaIndexLabelKey = RoleLabelPrefix + "role-index"
 )
 
 // RBGRoleTemplateType defines supported organization patterns
