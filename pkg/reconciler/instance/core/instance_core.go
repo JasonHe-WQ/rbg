@@ -120,6 +120,11 @@ func (c *commonControl) NewUpdatePods(updateVersion string, componentName string
 
 		// 3. init pod labels
 		componentPodLabels := instanceutil.InitComponentPodLabels(instance.Name, componentName, id, instance.GetRoleTemplateType())
+		if instance.GetInstancePattern() == v1alpha1.StatefulSetInstancePattern {
+			if replicaIndex := instance.Labels[v1alpha1.SetInstanceIDLabelKey]; replicaIndex != "" {
+				componentPodLabels[v1alpha1.RBGRoleReplicaIndexLabelKey] = replicaIndex
+			}
+		}
 		for key, value := range componentPodLabels {
 			pod.Labels[key] = value
 		}

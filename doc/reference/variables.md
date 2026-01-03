@@ -6,6 +6,7 @@
 --------------------------------------------------------------------|-------------------------------------------------------------------------
  rolebasedgroup.workloads.x-k8s.io/name                             | The name of the RoleBasedGroup to which these resources belong.
  rolebasedgroup.workloads.x-k8s.io/role                             | The name of the role to which these resources belong.
+ role.rolebasedgroup.workloads.x-k8s.io/role-index               | The ordinal index of the role replica (StatefulSet instance pattern only).
  pod-group.scheduling.sigs.k8s.io/name                              | The name of the podGroup for gang scheduling.
  rolebasedgroup.workloads.x-k8s.io/group-unique-key                 | The unique key of the group. Used as match label for topology affinity.
  rolebasedgroup.workloads.x-k8s.io/controller-revision-hash         | The version hash corresponding to the RBG object, used to determine whether the RBG object has changed.

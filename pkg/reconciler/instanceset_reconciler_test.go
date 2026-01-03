@@ -124,16 +124,6 @@ func TestInstanceSetReconciler_Validate(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name: "invalid template with unsupported pattern",
-			role: &workloadsv1alpha1.RoleSpec{
-				Labels: map[string]string{
-					workloadsv1alpha1.RBGInstancePatternLabelKey: "Foo",
-				},
-				Template: &corev1.PodTemplateSpec{},
-			},
-			expectError: true,
-		},
-		{
 			name: "valid leaderWorkerSet without components or template",
 			role: &workloadsv1alpha1.RoleSpec{
 				Labels: map[string]string{

@@ -83,6 +83,20 @@ func (g *EnvBuilder) buildLocalRoleVars() []corev1.EnvVar {
 			})
 	}
 
+	if g.role.Workload.Kind == "InstanceSet" &&
+		g.role.Labels[workloadsv1alpha1.RBGInstancePatternLabelKey] == string(workloadsv1alpha1.StatefulSetInstancePattern) {
+		envVars = append(envVars,
+			corev1.EnvVar{
+				Name: "ROLE_INDEX",
+				ValueFrom: &corev1.EnvVarSource{
+					FieldRef: &corev1.ObjectFieldSelector{
+						FieldPath: fmt.Sprintf("metadata.labels['%s']", workloadsv1alpha1.RBGRoleReplicaIndexLabelKey),
+					},
+				},
+			},
+		)
+	}
+
 	if g.role.Workload.Kind == "InstanceSet" {
 		envVars = append(envVars,
 			corev1.EnvVar{
