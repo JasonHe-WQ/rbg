@@ -182,6 +182,7 @@ func newVersionedInstance(
 		}
 	}
 	instance.Labels[apps.StatefulSetPodNameLabel] = instance.Name
+	instance.Labels[apps.PodIndexLabel] = strconv.Itoa(ordinal)
 
 	// Set revision label
 	if useUpdateRevision {

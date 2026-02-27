@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"fmt"
 	"sort"
 	"testing"
 
@@ -108,6 +109,115 @@ func TestEnvBuilder_Build(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "InstanceSet role with default Stateful pattern",
+			rbg: &workloadsv1alpha1.RoleBasedGroup{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-group",
+				},
+			},
+			role: &workloadsv1alpha1.RoleSpec{
+				Name: "instanceset-role",
+				Workload: workloadsv1alpha1.WorkloadSpec{
+					APIVersion: "workloads.x-k8s.io/v1alpha1",
+					Kind:       "InstanceSet",
+				},
+			},
+			expected: []corev1.EnvVar{
+				{
+					Name:  "GROUP_NAME",
+					Value: "test-group",
+				},
+				{
+					Name:  "ROLE_NAME",
+					Value: "instanceset-role",
+				},
+				{
+					Name: "ROLE_INDEX",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: fmt.Sprintf("metadata.labels['%s']", workloadsv1alpha1.RBGRoleRoleIndexLabelKey),
+						},
+					},
+				},
+				{
+					Name: "INSTANCE_NAME",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: fmt.Sprintf("metadata.labels['%s']", workloadsv1alpha1.InstanceNameLabelKey),
+						},
+					},
+				},
+				{
+					Name: "COMPONENT_NAME",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: fmt.Sprintf("metadata.labels['%s']", workloadsv1alpha1.InstanceComponentNameKey),
+						},
+					},
+				},
+				{
+					Name: "COMPONENT_INDEX",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: fmt.Sprintf("metadata.labels['%s']", workloadsv1alpha1.InstanceComponentIDKey),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "InstanceSet role with Stateless pattern",
+			rbg: &workloadsv1alpha1.RoleBasedGroup{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-group",
+				},
+			},
+			role: &workloadsv1alpha1.RoleSpec{
+				Name: "instanceset-role",
+				Workload: workloadsv1alpha1.WorkloadSpec{
+					APIVersion: "workloads.x-k8s.io/v1alpha1",
+					Kind:       "InstanceSet",
+				},
+				Annotations: map[string]string{
+					workloadsv1alpha1.RBGInstancePatternAnnotationKey: string(workloadsv1alpha1.StatelessInstancePattern),
+				},
+			},
+			expected: []corev1.EnvVar{
+				{
+					Name:  "GROUP_NAME",
+					Value: "test-group",
+				},
+				{
+					Name:  "ROLE_NAME",
+					Value: "instanceset-role",
+				},
+				{
+					Name: "INSTANCE_NAME",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: fmt.Sprintf("metadata.labels['%s']", workloadsv1alpha1.InstanceNameLabelKey),
+						},
+					},
+				},
+				{
+					Name: "COMPONENT_NAME",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: fmt.Sprintf("metadata.labels['%s']", workloadsv1alpha1.InstanceComponentNameKey),
+						},
+					},
+				},
+				{
+					Name: "COMPONENT_INDEX",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: fmt.Sprintf("metadata.labels['%s']", workloadsv1alpha1.InstanceComponentIDKey),
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -175,6 +285,118 @@ func TestEnvBuilder_buildLocalRoleVars(t *testing.T) {
 					ValueFrom: &corev1.EnvVarSource{
 						FieldRef: &corev1.ObjectFieldSelector{
 							FieldPath: "metadata.labels['apps.kubernetes.io/pod-index']",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "InstanceSet Stateful pattern role vars",
+			rbg: &workloadsv1alpha1.RoleBasedGroup{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-group",
+				},
+			},
+			role: &workloadsv1alpha1.RoleSpec{
+				Name: "instanceset-role",
+				Workload: workloadsv1alpha1.WorkloadSpec{
+					APIVersion: "workloads.x-k8s.io/v1alpha1",
+					Kind:       "InstanceSet",
+				},
+				Annotations: map[string]string{
+					workloadsv1alpha1.RBGInstancePatternAnnotationKey: string(workloadsv1alpha1.StatefulInstancePattern),
+				},
+			},
+			expected: []corev1.EnvVar{
+				{
+					Name:  "GROUP_NAME",
+					Value: "test-group",
+				},
+				{
+					Name:  "ROLE_NAME",
+					Value: "instanceset-role",
+				},
+				{
+					Name: "ROLE_INDEX",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: fmt.Sprintf("metadata.labels['%s']", workloadsv1alpha1.RBGRoleRoleIndexLabelKey),
+						},
+					},
+				},
+				{
+					Name: "INSTANCE_NAME",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: fmt.Sprintf("metadata.labels['%s']", workloadsv1alpha1.InstanceNameLabelKey),
+						},
+					},
+				},
+				{
+					Name: "COMPONENT_NAME",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: fmt.Sprintf("metadata.labels['%s']", workloadsv1alpha1.InstanceComponentNameKey),
+						},
+					},
+				},
+				{
+					Name: "COMPONENT_INDEX",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: fmt.Sprintf("metadata.labels['%s']", workloadsv1alpha1.InstanceComponentIDKey),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "InstanceSet Stateless pattern role vars",
+			rbg: &workloadsv1alpha1.RoleBasedGroup{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-group",
+				},
+			},
+			role: &workloadsv1alpha1.RoleSpec{
+				Name: "instanceset-role",
+				Workload: workloadsv1alpha1.WorkloadSpec{
+					APIVersion: "workloads.x-k8s.io/v1alpha1",
+					Kind:       "InstanceSet",
+				},
+				Annotations: map[string]string{
+					workloadsv1alpha1.RBGInstancePatternAnnotationKey: string(workloadsv1alpha1.StatelessInstancePattern),
+				},
+			},
+			expected: []corev1.EnvVar{
+				{
+					Name:  "GROUP_NAME",
+					Value: "test-group",
+				},
+				{
+					Name:  "ROLE_NAME",
+					Value: "instanceset-role",
+				},
+				{
+					Name: "INSTANCE_NAME",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: fmt.Sprintf("metadata.labels['%s']", workloadsv1alpha1.InstanceNameLabelKey),
+						},
+					},
+				},
+				{
+					Name: "COMPONENT_NAME",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: fmt.Sprintf("metadata.labels['%s']", workloadsv1alpha1.InstanceComponentNameKey),
+						},
+					},
+				},
+				{
+					Name: "COMPONENT_INDEX",
+					ValueFrom: &corev1.EnvVarSource{
+						FieldRef: &corev1.ObjectFieldSelector{
+							FieldPath: fmt.Sprintf("metadata.labels['%s']", workloadsv1alpha1.InstanceComponentIDKey),
 						},
 					},
 				},

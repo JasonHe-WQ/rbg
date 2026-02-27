@@ -87,6 +87,31 @@ func InitComponentPodLabels(instanceName, componentName string, id int32, roleTe
 	return l
 }
 
+func GetRoleReplicaIndex(instance *v1alpha1.Instance) string {
+	if instance == nil {
+		return ""
+	}
+
+	if index := instance.Labels[apps.PodIndexLabel]; index != "" {
+		return index
+	}
+
+	// Stateful mode instances follow "<set-name>-<ordinal>" and always carry this identity label.
+	if instance.Labels[apps.StatefulSetPodNameLabel] != instance.Name {
+		return ""
+	}
+
+	lastDash := strings.LastIndex(instance.Name, "-")
+	if lastDash == -1 || lastDash == len(instance.Name)-1 {
+		return ""
+	}
+	index := instance.Name[lastDash+1:]
+	if _, err := strconv.Atoi(index); err != nil {
+		return ""
+	}
+	return index
+}
+
 // IsRunningAndAvailable returns true if pod is in the PodRunning Phase, if it is available.
 func IsRunningAndAvailable(pod *v1.Pod, minReadySeconds int32) bool {
 	return pod.Status.Phase == v1.PodRunning && podutil.IsPodAvailable(pod, minReadySeconds, metav1.Now())
